@@ -1,0 +1,10 @@
+# NW Fermi Rules
+#
+# KERNEL!="event[0-9]*", GOTO="nw-fermi-end"
+
+KERNEL=="nwfermi?", SYMLINK+="nw-fermi", TAG+="systemd", ENV{SYSTEMD_WANTS}="nwfermi@%n.service"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTR{idVendor}=="1926", MODE="0666", SYMLINK+="nw-fermi-device"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTR{idVendor}=="0b8c", ATTR{idProduct}=="0064", MODE="0666", SYMLINK+="nw-fermi-device"
+ACTION=="add|change", SUBSYSTEM=="input", ATTRS{name}=="Nextwindow Fermi Touchscreen", ENV{NAME}="nextwindow", ENV{ID_INPUT.tags}="nextwindow"
+
+LABEL="nw-fermi-end"

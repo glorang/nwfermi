@@ -1,0 +1,106 @@
+--- a/nw-fermi.c	2012-03-21 22:44:21.000000000 +0100
++++ b/nw-fermi.c	2019-03-08 12:49:00.276735464 +0100
+@@ -18,7 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/kref.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/usb.h>
+ #include <linux/mutex.h>
+ #include <linux/input.h>
+@@ -265,7 +265,7 @@
+ 
+ 	interface = usb_find_interface(&fermi_driver, subminor);
+ 	if (!interface) {
+-		err ("%s - error, can't find device for minor %d",
++		pr_err("%s - error, can't find device for minor %d",
+ 		     __func__, subminor);
+ 		retval = -ENODEV;
+ 		goto exit;
+@@ -500,7 +500,7 @@
+ 	int retval = 0;
+ 
+ 	if (urb->status) {
+-		dbg("URB Status: %d\n", urb->status);
++		pr_debug("URB Status: %d\n", urb->status);
+ 		switch(urb->status) {
+ 		/* device gone, unplugged or unlinked */
+ 		case -ECONNRESET:
+@@ -516,7 +516,7 @@
+ 			retval = -EIO;
+ 			break;
+ 		default:
+-			err("Error on read completion routine. Code: %d", urb->status);
++			pr_err("Error on read completion routine. Code: %d", urb->status);
+ 			retval = -EFAULT;
+ 		}
+ 	}
+@@ -616,7 +616,7 @@
+ 	/* allocate memory for our device state and initialize it */
+ 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+ 	if (!dev) {
+-		err("Out of memory");
++		pr_err("Out of memory");
+ 		retval = -ENOMEM;
+ 		goto error;
+ 	}
+@@ -645,7 +645,7 @@
+ 
+ 	}
+ 	if (!(dev->bulk_in_endpointAddr)) {
+-		err("Could not find bulk-in endpoint");
++		pr_err("Could not find bulk-in endpoint");
+ 		goto error;
+ 	}
+ 
+@@ -657,19 +657,19 @@
+ 	dev->bulk_fifo = kfifo_alloc(BULK_FIFO_SIZE, GFP_KERNEL, &dev->bulk_lock);
+ 	if (!dev->bulk_fifo) {
+ #endif
+-		err("Could not allocate bulk_fifo");
++		pr_err("Could not allocate bulk_fifo");
+ 		goto error;
+ 	}
+ 	dev->bulk_interim_buf = vmalloc(BULK_FIFO_SIZE);
+ 	if (!dev->bulk_interim_buf) {
+-		err("Could not allocate bulk_interim_buf");
++		pr_err("Could not allocate bulk_interim_buf");
+ 		goto error;
+ 	}
+ 
+ 	/* initialize our input device */
+ 	dev->input_dev = input_allocate_device();
+ 	if (!dev->input_dev) {
+-		err("Could not allocate input device");
++		pr_err("Could not allocate input device");
+ 		retval = -ENOMEM;
+ 		goto error;
+ 	}
+@@ -687,7 +687,7 @@
+ #endif
+ 	retval = input_register_device(dev->input_dev);
+ 	if (retval) {
+-		err("Could not register input device");
++		pr_err("Could not register input device");
+ 		dev->input_dev_registered = false;
+ 		goto error;
+ 	}
+@@ -700,7 +700,7 @@
+ 	retval = usb_register_dev(interface, &fermi_class);
+ 	if (retval) {
+ 		/* something prevented us from registering this driver */
+-		err("Not able to get a minor for this device.");
++		pr_err("Not able to get a minor for this device.");
+ 		usb_set_intfdata(interface, NULL);
+ 		goto error;
+ 	}
+@@ -819,7 +819,7 @@
+ 	/* register this driver with the USB subsystem */
+ 	result = usb_register(&fermi_driver);
+ 	if (result)
+-		err("usb_register failed. Error number %d", result);
++		pr_err("usb_register failed. Error number %d", result);
+ 
+ 	return result;
+ }
