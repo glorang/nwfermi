@@ -11,7 +11,8 @@ Compared to the latest release this version has following enhancements:
 - Fix startup of user space deamon via udev/systemd implementation as you cannot launch 32 bit applications on 64 bits OSes via udev (blocked via seccomp in systemd-udevd)
 - Xorg config example
 
-Only validated on a Dell SX2210TB, indentified as "1926:0064 NextWindow 1950 HID Touchscreen" by lsusb.
+Validated on a Dell SX2210TB, indentified as "1926:0064 NextWindow 1950 HID Touchscreen" by lsusb.
+Confirmed to be working by user devkicks on a VAIO All in one VPCL11M1E, identified as "1926:0065 NextWindow 1950 HID Touchscreen" (See issue #1) 
 
 # Install required packages
 
