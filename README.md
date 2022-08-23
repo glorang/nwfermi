@@ -1,6 +1,6 @@
-# NextWindow Touchscreen on Ubuntu 18.04
+# NextWindow Touchscreen on Ubuntu 22.04
 
-This is a guide for installing / configuring a NextWindow Touchscreen on Ubuntu 18.04.
+This is a guide for installing / configuring a NextWindow Touchscreen on Ubuntu 22.04.
 
 It is completely based on the work done by Daniel Newton / djp (https://launchpad.net/nwfermi/).
 The driver consists of a GPL'd kernel part and a proprietary / closed source user space daemon, without this daemon it will not work.
@@ -17,7 +17,7 @@ Confirmed to be working by user devkicks on a VAIO All in one VPCL11M1E, identif
 # Install required packages
 
 ```
-apt-get install dkms build-essential autoconf2.13 xorg-dev xserver-xorg-dev xutils-dev libgrail-dev autoconf libtool lib32z1 lib32ncurses5 libc6-i386
+apt-get install dkms build-essential autoconf xutils-dev libtool xserver-xorg-dev libc6-i386
 ```
 
 # Build and patch original nwfermi driver
@@ -86,8 +86,8 @@ apt-get install dkms build-essential autoconf2.13 xorg-dev xserver-xorg-dev xuti
 
 # Add your local user to the input group
 
-To be able to read the input device your local user should be part of the *input* group.
-Optionally, you should/can add the gdm user to this group as well
+To be able to read the input device your local user *must* be part of the *input* group.
+You should add the *gdm* user to this group as well.
 
 ```
 # usermod -a -G input gdm
