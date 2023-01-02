@@ -17,7 +17,7 @@ Confirmed to be working by user devkicks on a VAIO All in one VPCL11M1E, identif
 # Install required packages
 
 ```
-apt-get install dkms build-essential autoconf xutils-dev libtool xserver-xorg-dev libc6-i386
+apt-get install dkms build-essential autoconf xutils-dev libtool xserver-xorg-dev libc6-i386 pkg-config
 ```
 
 # Build and patch original nwfermi driver
