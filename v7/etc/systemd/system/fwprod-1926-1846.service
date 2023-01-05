@@ -1,0 +1,9 @@
+[Unit]
+Description=Exec fwprod (Next Window Touchscreen)
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/fwprod /product_id 0x1846 /message 004302F300 /padding_size 65 /timeout 300 /daemon
+
+[Install]
+WantedBy=multi-user.target
