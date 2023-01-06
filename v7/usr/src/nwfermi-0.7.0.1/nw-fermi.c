@@ -18,7 +18,7 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/kref.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <linux/usb.h>
 #include <linux/mutex.h>
 #include <linux/input.h>
@@ -33,9 +33,6 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33)
 #define NEW_KFIFO
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
-#define NEW_USB_ALLOC
-#endif
 
 /* HID mouse defines */
 #define NW1950_MIN_X 0
@@ -48,9 +45,6 @@
 #define NW1950_MIN_H 0
 #define NW1950_MAX_H 32767
 #define NW1950_DEFAULT_H 1000
-
-/* convert work_struct to delayed_work */
-#define to_delayed_work(_work)  container_of(_work, struct delayed_work, work)
 
 /* table of devices that work with this driver */
 static struct usb_device_id fermi_table [] = {
@@ -223,14 +217,15 @@ struct usb_fermi {
 	struct usb_device	*udev;			/* the usb device for this device */
 	struct usb_interface	*interface;		/* the interface for this device */
 	struct semaphore	limit_sem;		/* limiting the number of writes in progress */
-	struct usb_anchor	submitted;		/* in case we need to retract our submissions */
 #ifdef NEW_KFIFO
 	struct kfifo		bulk_fifo;		/* the buffer to receive data */
 #else
 	struct kfifo*		bulk_fifo;		/* the buffer to receive data */
 #endif
 	void*			bulk_interim_buf;	/* interim buf between bulk_fifo and copy_to_user */
+	struct urb*		input_urb;		/* for input from the device */
 	__u8			bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
+	bool			suspending;		/* suspension in progress, don't touch hardware */
 	int			errors;			/* the last request tanked */
 	int			open_count;		/* count the number of openers */
 	spinlock_t		err_lock;		/* lock for errors */
@@ -248,16 +243,13 @@ struct usb_fermi {
 
 static struct usb_driver fermi_driver;
 static void fermi_draw_down(struct usb_fermi *dev);
-static int fermi_start_bulk_reads(struct usb_fermi* dev);
+static int fermi_start_bulk_reads(struct usb_fermi* dev, gfp_t mem);
 
 static void fermi_delete(struct kref *kref)
 {
 	struct usb_fermi *dev = to_fermi_dev(kref);
 
-	/* flush generic "event" work queue as we sometimes use it
-	 * (bulk_reset_work, bulk_free_urb_work) */
-	flush_scheduled_work();
-
+	cancel_delayed_work_sync(&dev->bulk_reset_work);	
 	usb_put_dev(dev->udev);
 	if (dev->input_dev) {
 		if (dev->input_dev_registered)
@@ -265,6 +257,7 @@ static void fermi_delete(struct kref *kref)
 		else
 			input_free_device(dev->input_dev);
 	}
+	usb_free_urb(dev->input_urb);
 #ifdef NEW_KFIFO
 	kfifo_free(&dev->bulk_fifo);
 #else
@@ -361,7 +354,6 @@ static int fermi_flush(struct file *file, fl_owner_t id)
 
 	/* wait for io to stop */
 	mutex_lock(&dev->io_mutex);
-	fermi_draw_down(dev);
 
 	/* read out errors, leave subsequent opens a clean slate */
 	spin_lock_irq(&dev->err_lock);
@@ -516,17 +508,21 @@ static struct usb_class_driver fermi_class = {
 	.minor_base =	USB_SKEL_MINOR_BASE,
 };
 
-static void bulk_reset(struct work_struct * work)
+static void bulk_reset(struct work_struct *work)
 {
 	struct usb_fermi* dev = container_of(to_delayed_work(work), struct usb_fermi, bulk_reset_work);
-	int retval = usb_clear_halt(dev->udev,
+	int retval = 0;
+
+	if (dev->suspending)
+		return;
+	retval = usb_clear_halt(dev->udev,
 			usb_rcvbulkpipe(dev->udev, dev->bulk_in_endpointAddr));
 	if (retval)
 		pr_err("Error cannot reset stalled bulk pipe - Code: %d", retval);
 	else
 	{
 		pr_devel("Restarting bulk reads");
-		fermi_start_bulk_reads(dev);
+		fermi_start_bulk_reads(dev, GFP_KERNEL);
 	}
 }
 
@@ -535,11 +531,7 @@ static void bulk_free_urb(struct work_struct * work)
 	struct usb_fermi* dev = container_of(to_delayed_work(work), struct usb_fermi, bulk_free_urb_work);
 
 	/* free resources */
-#ifdef NEW_USB_ALLOC
-	usb_free_coherent(dev->udev, dev->bulk_free_urb->transfer_buffer_length, dev->bulk_free_urb->transfer_buffer, dev->bulk_free_urb->transfer_dma);
-#else
-	usb_buffer_free(dev->udev, dev->bulk_free_urb->transfer_buffer_length, dev->bulk_free_urb->transfer_buffer, dev->bulk_free_urb->transfer_dma);
-#endif
+	kfree(dev->bulk_free_urb->transfer_buffer);
 	usb_free_urb(dev->bulk_free_urb);
 	dev->bulk_free_urb = NULL;
 }
@@ -567,7 +559,6 @@ static void fermi_bulk_read_complete(struct urb* urb)
 			break;
 		case -EPIPE:
 			pr_devel("Stalled bulk endpoint");
-			INIT_DELAYED_WORK(&dev->bulk_reset_work, bulk_reset);
 			/* clear halt after 2 seconds */
 			schedule_delayed_work(&dev->bulk_reset_work, HZ * 2);
 			break;
@@ -597,7 +588,6 @@ static void fermi_bulk_read_complete(struct urb* urb)
 					usb_rcvbulkpipe(dev->udev, dev->bulk_in_endpointAddr),
 					urb->transfer_buffer, urb->transfer_buffer_length, 
 					fermi_bulk_read_complete, dev);
-			urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 
 			/* resumbit the urb */
 			retval = usb_submit_urb(urb, GFP_ATOMIC);
@@ -614,23 +604,19 @@ static void fermi_bulk_read_complete(struct urb* urb)
 	}
 }
 
-static int fermi_start_bulk_reads(struct usb_fermi* dev)
+static int fermi_start_bulk_reads(struct usb_fermi* dev, gfp_t mem)
 {
 	int retval = -ENOMEM;
 	struct urb* urb=NULL;		
 	char* buf = NULL;
 	
 	/* create an URB */
-	urb = usb_alloc_urb(0, GFP_KERNEL);
+	urb = usb_alloc_urb(0, mem);
 	if (!urb)
 		goto error;
 
 	/* allocate transfer buffer */
-#ifdef NEW_USB_ALLOC
-	buf = usb_alloc_coherent(dev->udev, BULK_TRANSFER_SIZE, GFP_KERNEL, &urb->transfer_dma);
-#else
-	buf = usb_buffer_alloc(dev->udev, BULK_TRANSFER_SIZE, GFP_KERNEL, &urb->transfer_dma);
-#endif
+	buf = kmalloc(BULK_TRANSFER_SIZE, mem);
 	if (!buf)
 		goto error;
 
@@ -638,23 +624,21 @@ static int fermi_start_bulk_reads(struct usb_fermi* dev)
 	usb_fill_bulk_urb(urb, dev->udev,
 			  usb_rcvbulkpipe(dev->udev, dev->bulk_in_endpointAddr),
 			  buf, BULK_TRANSFER_SIZE, fermi_bulk_read_complete, dev);
-	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-	//usb_anchor_urb(urb, &dev->submitted);
 
 	/* send the data out the bulk port */
-	retval = usb_submit_urb(urb, GFP_KERNEL);
+	dev->input_urb = urb;
+	retval = usb_submit_urb(urb, mem);
+
+	return retval;
 
 error:
 	if (retval)
 	{
-		if (buf)
-#ifdef NEW_USB_ALLOC
-			usb_free_coherent(dev->udev, BULK_TRANSFER_SIZE, buf, urb->transfer_dma);
-#else
-			usb_buffer_free(dev->udev, BULK_TRANSFER_SIZE, buf, urb->transfer_dma);
-#endif
-		if (urb)
+		kfree(buf);
+		if (urb) {
+			dev->input_urb = NULL;
 			usb_free_urb(urb);
+		}
 	}
 	return retval;
 }
@@ -679,8 +663,8 @@ static int fermi_probe(struct usb_interface *interface, const struct usb_device_
 	mutex_init(&dev->io_mutex);
 	spin_lock_init(&dev->err_lock);
 	spin_lock_init(&dev->bulk_lock);
-	init_usb_anchor(&dev->submitted);
 	init_completion(&dev->bulk_in_completion);
+	INIT_DELAYED_WORK(&dev->bulk_reset_work, bulk_reset);
 
 	dev->udev = usb_get_dev(interface_to_usbdev(interface));
 	dev->interface = interface;
@@ -765,7 +749,7 @@ static int fermi_probe(struct usb_interface *interface, const struct usb_device_
 		 interface->minor);
 
 	/* start our bulk reader */
-	fermi_start_bulk_reads(dev);
+	fermi_start_bulk_reads(dev, GFP_KERNEL);
 
 	return 0;
 
@@ -798,7 +782,7 @@ static void fermi_disconnect(struct usb_interface *interface)
 	/* give back our minor */
 	usb_deregister_dev(interface, &fermi_class);
 
-	usb_kill_anchored_urbs(&dev->submitted);
+	usb_kill_urb(dev->input_urb);
 
 	/* kill any current waiting IO */
 	complete(&dev->bulk_in_completion);
@@ -811,11 +795,7 @@ static void fermi_disconnect(struct usb_interface *interface)
 
 static void fermi_draw_down(struct usb_fermi *dev)
 {
-	int time;
-
-	time = usb_wait_anchor_empty_timeout(&dev->submitted, 1000);
-	if (!time)
-		usb_kill_anchored_urbs(&dev->submitted);
+	usb_kill_urb(dev->input_urb);
 }
 
 static int fermi_suspend(struct usb_interface *intf, pm_message_t message)
@@ -824,12 +804,19 @@ static int fermi_suspend(struct usb_interface *intf, pm_message_t message)
 
 	if (!dev)
 		return 0;
+	dev->suspending = true;
 	fermi_draw_down(dev);
+	cancel_delayed_work_sync(&dev->bulk_reset_work);
+
 	return 0;
 }
 
 static int fermi_resume (struct usb_interface *intf)
 {
+	struct usb_fermi *dev = usb_get_intfdata(intf);
+
+	dev->suspending = false;
+	fermi_start_bulk_reads(dev, GFP_NOIO);
 	return 0;
 }
 
@@ -838,7 +825,9 @@ static int fermi_pre_reset(struct usb_interface *intf)
 	struct usb_fermi *dev = usb_get_intfdata(intf);
 
 	mutex_lock(&dev->io_mutex);
+	dev->suspending = true;
 	fermi_draw_down(dev);
+	cancel_delayed_work_sync(&dev->bulk_reset_work);
 
 	return 0;
 }
@@ -848,7 +837,9 @@ static int fermi_post_reset(struct usb_interface *intf)
 	struct usb_fermi *dev = usb_get_intfdata(intf);
 
 	/* we are sure no URBs are active - no locking needed */
+	dev->suspending = false;
 	dev->errors = -EPIPE;
+	fermi_start_bulk_reads(dev, GFP_NOIO);
 	mutex_unlock(&dev->io_mutex);
 
 	return 0;
@@ -860,6 +851,7 @@ static struct usb_driver fermi_driver = {
 	.disconnect =	fermi_disconnect,
 	.suspend =	fermi_suspend,
 	.resume =	fermi_resume,
+	.reset_resume =	fermi_resume,
 	.pre_reset =	fermi_pre_reset,
 	.post_reset =	fermi_post_reset,
 	.id_table =	fermi_table,
