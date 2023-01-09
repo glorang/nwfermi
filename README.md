@@ -223,3 +223,49 @@ Event: time 1673258489.784821, type 3 (EV_ABS), code 54 (ABS_MT_POSITION_Y), val
 Event: time 1673258489.784821, type 3 (EV_ABS), code 48 (ABS_MT_TOUCH_MAJOR), value 1000
 Event: time 1673258489.784821, type 3 (EV_ABS), code 49 (ABS_MT_TOUCH_MINOR), value 1000
 ```
+
+- Check Xorg log in `/home/<username>/.local/share/xorg/Xorg.0.log` (or Xorg.1.log), expected output:
+
+```
+$ grep -i fermi /home/glorang/.local/share/xorg/Xorg.1.log
+[    52.662] (II) config/udev: Adding input device Nextwindow Fermi Touchscreen (/dev/input/event9)
+[    52.662] (**) Nextwindow Fermi Touchscreen: Applying InputClass "libinput pointer catchall"
+[    52.662] (**) Nextwindow Fermi Touchscreen: Applying InputClass "Nextwindow Fermi Touchscreen"
+[    52.662] (II) Using input driver 'nextwindow' for 'Nextwindow Fermi Touchscreen'
+[    52.662] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.662] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.662] (II) Nextwindow Fermi Touchscreen: Using device /dev/input/event9.
+[    52.662] (II) Nextwindow Fermi Touchscreen: Using touch help.
+[    52.718] (II) XINPUT: Adding extended input device "Nextwindow Fermi Touchscreen" (type: UNKNOWN, id 16)
+[    52.718] (**) Nextwindow Fermi Touchscreen: (accel) keeping acceleration scheme 1
+[    52.718] (**) Nextwindow Fermi Touchscreen: (accel) acceleration profile 0
+[    52.718] (**) Nextwindow Fermi Touchscreen: (accel) acceleration factor: 2.000
+[    52.718] (**) Nextwindow Fermi Touchscreen: (accel) acceleration threshold: 4
+[    52.718] (II) Nextwindow Fermi Touchscreen: On.
+[    52.718] (II) config/udev: Adding input device Nextwindow Fermi Touchscreen (/dev/input/js0)
+[    52.718] (**) Nextwindow Fermi Touchscreen: Applying InputClass "Nextwindow Fermi Touchscreen"
+[    52.718] (II) Using input driver 'nextwindow' for 'Nextwindow Fermi Touchscreen'
+[    52.718] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.718] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.718] (II) Nextwindow Fermi Touchscreen: Using device /dev/input/js0.
+[    52.718] (II) Nextwindow Fermi Touchscreen: Using touch help.
+[    52.770] (II) XINPUT: Adding extended input device "Nextwindow Fermi Touchscreen" (type: UNKNOWN, id 17)
+[    52.770] (**) Nextwindow Fermi Touchscreen: (accel) keeping acceleration scheme 1
+[    52.770] (**) Nextwindow Fermi Touchscreen: (accel) acceleration profile 0
+[    52.770] (**) Nextwindow Fermi Touchscreen: (accel) acceleration factor: 2.000
+[    52.770] (**) Nextwindow Fermi Touchscreen: (accel) acceleration threshold: 4
+[    52.770] (II) Nextwindow Fermi Touchscreen: On.
+[    52.770] (II) config/udev: Adding input device Nextwindow Fermi Touchscreen (/dev/input/mouse3)
+[    52.770] (**) Nextwindow Fermi Touchscreen: Applying InputClass "Nextwindow Fermi Touchscreen"
+[    52.770] (II) Using input driver 'nextwindow' for 'Nextwindow Fermi Touchscreen'
+[    52.770] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.770] (**) Nextwindow Fermi Touchscreen: always reports core events
+[    52.770] (II) Nextwindow Fermi Touchscreen: Using device /dev/input/mouse3.
+[    52.770] (II) Nextwindow Fermi Touchscreen: Using touch help.
+[    52.826] (II) XINPUT: Adding extended input device "Nextwindow Fermi Touchscreen" (type: UNKNOWN, id 18)
+[    52.826] (**) Nextwindow Fermi Touchscreen: (accel) keeping acceleration scheme 1
+[    52.826] (**) Nextwindow Fermi Touchscreen: (accel) acceleration profile 0
+[    52.826] (**) Nextwindow Fermi Touchscreen: (accel) acceleration factor: 2.000
+[    52.826] (**) Nextwindow Fermi Touchscreen: (accel) acceleration threshold: 4
+[    52.826] (II) Nextwindow Fermi Touchscreen: On.
+```
