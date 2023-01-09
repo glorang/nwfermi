@@ -2,7 +2,7 @@
 
 This is a guide for installing / configuring a NextWindow Touchscreen on Ubuntu 22.04.
 
-The files in this subrepo will install nwfermi 0.7.0.1.
+The files in this repo will install nwfermi 0.7.0.1.
 
 It is based on the files provided by HP as SUSE drivers for the "HP Compaq Elite 8300 All-in-One Desktop PC". [HP Support Link](https://support.hp.com/us-en/drivers/selfservice/hp-compaq-elite-8300-all-in-one-desktop-pc/5272027) | [Direct Link](https://ftp.hp.com/pub/softpaq/sp63501-64000/sp63501.tgz)
 
