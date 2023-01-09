@@ -1,9 +1,0 @@
-[Unit]
-Description=Next Window Touchscreen Daemon (nwfermi)
-
-[Service]
-Type=forking
-ExecStart=/usr/sbin/nwfermi_daemon /daemon /instanceId %I
-
-[Install]
-WantedBy=multi-user.target
