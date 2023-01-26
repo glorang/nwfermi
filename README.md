@@ -94,7 +94,7 @@ ln -s /usr/lib/i386-linux-gnu/libudev.so.1 /usr/lib/i386-linux-gnu/libudev.so.0
 # Build xf86-input-nextwindow Xorg module
 
 ```
-# cd /usr/src/xf86-input-nextwindow-0.3.4
+# cd usr/src/xf86-input-nextwindow-0.3.4
 # chmod +x autogen.sh ; ./autogen.sh
 # make
 # make install
