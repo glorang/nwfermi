@@ -1,0 +1,29 @@
+.ds q \N'34'
+.TH RANDOM 4 "xf86-input-nextwindow 0.0.1" "X Version 11"
+.SH NAME
+nextwindow \- Example X.Org input driver
+.SH SYNOPSIS
+.nf
+.B "Section \*qInputDevice\*q"
+.BI "  Identifier \*q" devname \*q
+.B  "  Driver \*qnextwindow\*q"
+.BI "  Option \*qDevice\*q   \*q" devpath \*q
+\ \ ...
+.B EndSection
+.fi
+.SH DESCRIPTION
+.B nextwindow 
+is an example Xorg input driver It reads from /dev/unextwindow and
+moves the pointer along the X axis by a random number of pixels.
+.PP
+.SH EMPTY MANPAGE
+This is an example driver, hence the man page is not particularly useful.
+For a better structure of the man page, including which sections to use in a
+new man page see the 
+.B evdev(4)
+man page.
+
+
+.SH "SEE ALSO"
+Xorg(1), xorg.conf(5), Xserver(1), X(7),
+README.mouse.
