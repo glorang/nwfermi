@@ -91,11 +91,10 @@ ln -s /usr/lib/i386-linux-gnu/libudev.so.1 /usr/lib/i386-linux-gnu/libudev.so.0
 # systemctl daemon-reload
 ```
 
-# Rebuild xf86-input-nextwindow Xorg module
+# Build xf86-input-nextwindow Xorg module
 
-- Download xf86-input-nextwindow_0.3.4~precise1.tar.gz from https://launchpad.net/~djpnewton/+archive/ubuntu/xf86-input-nextwindow/+packages
-- Extract and compile
 ```
+# cd /usr/src/xf86-input-nextwindow-0.3.4
 # chmod +x autogen.sh ; ./autogen.sh
 # make
 # make install
