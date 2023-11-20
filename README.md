@@ -34,6 +34,16 @@ apt-get install libudev1:i386
 ln -s /usr/lib/i386-linux-gnu/libudev.so.1 /usr/lib/i386-linux-gnu/libudev.so.0
 ```
 
+# Get source files from this Git repo
+
+```
+# wget https://github.com/glorang/nwfermi/archive/refs/heads/master.zip
+# unzip master.zip
+# cd nwfermi-master
+```
+
+All following chapters assume you are executing the steps as outlined from within the `nwfermi-master` folder.
+
 # Build and install nwfermi driver
 
 - Remove nwfermi/0.6.5.0 if installed
@@ -128,7 +138,7 @@ Use following steps for some general debugging hints:
 
 - Run `lsusb` and check if your model (1926:XXXX) is supported by the driver [nw-fermi.c, line #49 and onwards](usr/src/nwfermi-0.7.0.1/nw-fermi.c#L49)
 - Check if kernel module is loaded: `lsmod |grep -i fermi`
-- Enter strings `/dev/nwfermi1` (or nwfermi2) it should produce garbage text output when you touch the screen
+- Enter `strings /dev/nwfermi1` (or nwfermi2) it should produce garbage text output when you touch the screen
 - Start nwfermi daemon manually in foreground `/usr/sbin/nwfermi_daemon /instanceId 1`, expected output:
 
 ```
