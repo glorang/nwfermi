@@ -130,7 +130,7 @@ make install
 ```
 - Install module
 ```
-cp /usr/local/lib/xorg/modules/input/nextwindow_drv.* /usr/lib/xorg/modules/input/
+cp /usr/local/lib/xorg/modules/input/nextwindow_drv.la /usr/local/lib/xorg/modules/input/nextwindow_drv.so /usr/lib/xorg/modules/input/
 ```
 
 # Disable Wayland / Enable Xorg
