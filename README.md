@@ -1,6 +1,8 @@
-# NextWindow Touchscreen on Ubuntu 22.04
+# NextWindow Touchscreen on Ubuntu 24.04
 
-This is a guide for installing / configuring a NextWindow Touchscreen on Ubuntu 22.04.
+This is a guide for installing / configuring a NextWindow Touchscreen on Ubuntu 24.04.
+
+It has been tested over time and should work fine on 22.04, 20.04 and 18.04 as well, I'm just updating the procedure here once I've validated it on the latest LTS (there might be some delay on this!).
 
 The files in this repo will install nwfermi 0.7.0.1.
 
@@ -13,6 +15,8 @@ The HP driver has not been updated anymore since 2013, I've made following enhan
 - Xorg config example
 
 For models 1926:1846 and 1926:1878 you need to install the additional "fwprod" daemon. Its usage is unclear but seems to work according to #4. See additional steps as required outlined below.
+
+You should execute the entire procedure with the root user (e.g. execute a `su -` or `sudo -i` before you begin).
 
 # Licensing
 
@@ -31,15 +35,24 @@ Install libudev1 and symlink it to libudev0 (no longer available as i386)
 
 ```
 apt-get install libudev1:i386
+```
+
+```
 ln -s /usr/lib/i386-linux-gnu/libudev.so.1 /usr/lib/i386-linux-gnu/libudev.so.0
 ```
 
 # Get source files from this Git repo
 
 ```
-# wget https://github.com/glorang/nwfermi/archive/refs/heads/master.zip
-# unzip master.zip
-# cd nwfermi-master
+wget https://github.com/glorang/nwfermi/archive/refs/heads/master.zip
+```
+
+```
+unzip master.zip
+```
+
+```
+cd nwfermi-master
 ```
 
 All following chapters assume you are executing the steps as outlined from within the `nwfermi-master` folder.
@@ -48,70 +61,76 @@ All following chapters assume you are executing the steps as outlined from withi
 
 - Remove nwfermi/0.6.5.0 if installed
 ```
-# dkms unbuild nwfermi/0.6.5.0 --all
+dkms unbuild nwfermi/0.6.5.0 --all
 ```
 - Install nwfermi source to /usr/src
 ```
-# cp -p -r usr/src/nwfermi-0.7.0.1 /usr/src
+cp -p -r usr/src/nwfermi-0.7.0.1 /usr/src
 ```
 - Build nwfermi/0.7.0.1
 ```
-# dkms build nwfermi/0.7.0.1
+dkms build nwfermi/0.7.0.1
 ```
 - Install module
 ```
-# dkms install nwfermi/0.7.0.1
+dkms install nwfermi/0.7.0.1
 ```
 
 # Install required nwfermi files
 - Copy Xorg config
 ```
-# cp etc/X11/xorg.conf.d/10-nwfermi.conf /etc/X11/xorg.conf.d/
+cp etc/X11/xorg.conf.d/10-nwfermi.conf /etc/X11/xorg.conf.d/
 ```
 - Copy nwfermi_daemon to /usr/sbin
 ```
-# cp usr/sbin/nwfermi_daemon /usr/sbin
+cp usr/sbin/nwfermi_daemon /usr/sbin
 ```
 - Install udev rules from this git repo
 ```
-# cp etc/udev/rules.d/40-nw-fermi.rules /etc/udev/rules.d/
+cp etc/udev/rules.d/40-nw-fermi.rules /etc/udev/rules.d/
 ```
 - Install systemd service files from this git repo
 ```
-# cp etc/systemd/system/nwfermi@.service /etc/systemd/system/
+cp etc/systemd/system/nwfermi@.service /etc/systemd/system/
 ```
 - Reload systemd
 ```
-# systemctl daemon-reload
+systemctl daemon-reload
 ```
 
 # Install optional nwfermi files (models 1926:1846 and 1926:1878)
 
 - Copy fwprod to /usr/sbin
 ```
-# cp usr/sbin/fwprod /usr/sbin
+cp usr/sbin/fwprod /usr/sbin
 ```
 - Install systemd service files from this git repo
 ```
-# cp etc/systemd/system/fwprod-1926-1846.service /etc/systemd/system/
-# cp etc/systemd/system/fwprod-1926-1878.service /etc/systemd/system/
+cp etc/systemd/system/fwprod-1926-1846.service /etc/systemd/system/
+cp etc/systemd/system/fwprod-1926-1878.service /etc/systemd/system/
 ```
 - Reload systemd
 ```
-# systemctl daemon-reload
+systemctl daemon-reload
 ```
 
 # Build xf86-input-nextwindow Xorg module
 
 ```
-# cd usr/src/xf86-input-nextwindow-0.3.4
-# chmod +x autogen.sh ; ./autogen.sh
-# make
-# make install
+cd usr/src/xf86-input-nextwindow-0.3.4
+```
+```
+chmod +x autogen.sh ; ./autogen.sh
+```
+```
+make
+```
+```
+make install
 ```
 - Install module
 ```
-# cp /usr/local/lib/xorg/modules/input/nextwindow_drv.* /usr/lib/xorg/modules/input/
+cp /usr/local/lib/xorg/modules/input/nextwindow_drv.* /usr/lib/xorg/modules/input/
 ```
 
 # Disable Wayland / Enable Xorg
@@ -121,12 +140,12 @@ Edit `/etc/gdm3/custom.conf` and set `WaylandEnable=false` in the `[daemon]` sec
 # Add your local user to the input group
 
 To be able to read the input device your local user *must* be part of the *input* group.
-You should add the *gdm* user to this group as well.
-On Linux Mint 22 Xfce Edition, replace gdm for 'lightdm'. Everything else stays the same.
+You should add the *gdm* user to this group as well if you want touch to work on the login screen.
+On Linux Mint 22 Xfce Edition, replace `gdm` with `lightdm`.
 
 ```
-# usermod -a -G input gdm 
-# usermod -a -G input your_username
+usermod -a -G input gdm
+usermod -a -G input your_username
 ```
 
 # Reboot
