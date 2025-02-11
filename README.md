@@ -122,9 +122,10 @@ Edit `/etc/gdm3/custom.conf` and set `WaylandEnable=false` in the `[daemon]` sec
 
 To be able to read the input device your local user *must* be part of the *input* group.
 You should add the *gdm* user to this group as well.
+On Linux Mint 22 Xfce Edition, replace gdm for 'lightdm'. Everything else stays the same.
 
 ```
-# usermod -a -G input gdm
+# usermod -a -G input gdm 
 # usermod -a -G input your_username
 ```
 
